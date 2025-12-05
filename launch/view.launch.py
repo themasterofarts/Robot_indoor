@@ -39,7 +39,7 @@ def generate_launch_description():
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_ros_gz_sim, 'launch', 'gz_sim.launch.py')),
-        launch_arguments={'gz_args': PathJoinSubstitution([
+        launch_arguments={'gz_args': PathJoinSubstitution([ "-r" ,
             pkg_project_gazebo,
             'worlds',
             'empty_gz.world'
@@ -109,10 +109,17 @@ def generate_launch_description():
         output='screen'
     )
 
+
     ros_gz_image_bridge = Node(
         package="ros_gz_image",
         executable="image_bridge",
-        arguments=["/camera/image_raw"]
+        arguments=[
+            "/camera/image_raw",
+            "depth_camera/image", 
+            "depth_camera/depth_image"
+        ],
+        parameters=[{"use_sim_time": use_sim_time}],
+        output="screen",
     )
 
     return LaunchDescription([
