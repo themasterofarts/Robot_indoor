@@ -13,7 +13,7 @@ find_package(rclcpp REQUIRED)
 # find_package(<dependency> REQUIRED)
 
 install(
-  DIRECTORY  description launch worlds config
+  DIRECTORY  description launch worlds config rviz
   DESTINATION share/${PROJECT_NAME}
 )
 

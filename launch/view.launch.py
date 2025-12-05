@@ -8,7 +8,7 @@ from launch.actions import IncludeLaunchDescription
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution , Command
-
+from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node
 
 
@@ -85,11 +85,18 @@ def generate_launch_description():
 
     # Visualize in RViz
     rviz = Node(
-       package='rviz2',
-       executable='rviz2',
-
-       condition=IfCondition(LaunchConfiguration('rviz'))
-    )
+    package='rviz2',
+    executable='rviz2',
+    arguments=[
+        '-d', 
+        PathJoinSubstitution([
+            FindPackageShare('robot_indoor'),
+            'rviz',
+            'bot.rviz'
+        ])
+    ],
+    condition=IfCondition(LaunchConfiguration('rviz'))
+)
 
     # Bridge ROS topics and Gazebo messages for establishing communication
     bridge = Node(
