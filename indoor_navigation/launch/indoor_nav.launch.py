@@ -60,11 +60,11 @@ def generate_launch_description():
                 ),
                 description="Full path to the RVIZ config file to use",
             ),
-            # launch.actions.DeclareLaunchArgument(
-            #     name="map",
-            #     default_value=static_map_path,
-            #     description="Full path to map file to load",
-            # ),
+            launch.actions.DeclareLaunchArgument(
+                name="map",
+                default_value=static_map_path,
+                description="Full path to map file to load",
+            ),
             launch.actions.DeclareLaunchArgument(
                 name="params_file",
                 default_value=nav2_params_path,
