@@ -76,15 +76,16 @@ def generate_launch_description():
             "-allow_renaming",
             "true",
             "-x",
-            "0.0",
+            "-0.54",
             "-y",
-            "0.0",
+            "-2.76",
             "-z",
             "0.1",
             "-R",
             "0.0",
             "-P",
             "0.0",
+            "-Y", "1.54",
         ],
     )
 
@@ -142,6 +143,6 @@ def generate_launch_description():
             robot_state_publisher,
             joint_state_publisher_node,
             start_gazebo_ros_spawner_cmd,
-            rviz,
+            #rviz,
         ]
     )
