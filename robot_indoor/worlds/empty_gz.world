@@ -59,7 +59,6 @@
     <heading_deg>0</heading_deg>
   </spherical_coordinates>
 
-
     <model name="ground_plane">
       <static>true</static>
       <link name="link">
@@ -86,5 +85,13 @@
         </visual>
       </link>
     </model>
+
+    <include>
+      <uri>
+         https://fuel.gazebosim.org/1.0/ahmetraufoktay/models/maze_model_rs
+      </uri>
+    </include>
+
+
   </world>
 </sdf>

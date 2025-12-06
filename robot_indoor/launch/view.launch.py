@@ -46,13 +46,6 @@ def generate_launch_description():
         }.items(),
     )
 
-    # launch_arguments={
-    #         "gz_args": [
-    #             "-r ",
-    #             PathJoinSubstitution([pkg_path, "worlds", "empty_gz.world"]),
-    #         ],
-    #     }.items(),
-
     # Create nodes for robot state publisher, joint state publisher, and controllers
     robot_state_publisher = Node(
         package="robot_state_publisher",
