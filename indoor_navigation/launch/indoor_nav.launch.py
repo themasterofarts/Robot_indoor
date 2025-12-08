@@ -42,7 +42,7 @@ def generate_launch_description():
         executable="static_transform_publisher",
         name="base_to_map",
         output="screen",
-        arguments=["0", "0", "0", "0", "0", "0", "base_link", "map"],
+        arguments=["0", "0", "0", "0", "0", "0", "map", "base_link"],
     )
 
     # Launch them all!
