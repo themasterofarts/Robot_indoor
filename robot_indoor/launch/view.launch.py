@@ -133,6 +133,29 @@ def generate_launch_description():
         output="screen",
     )
 
+
+    pedestrian_tf_broadcaster = Node(
+        package='robot_indoor',
+        executable='pedestrian_tf_broadcaster.py',
+        name='pedestrian_tf_broadcaster',
+        output='screen',
+        parameters=[{
+            'input_topic': '/actor/pose',
+            'parent_frame': 'map',
+            'child_frame': 'pedestrian',
+            'use_sim_time': True,
+        }]
+        )
+        
+        # 🔹 TF statique map -> odom
+    tf_statique_map_to_odom = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='static_map_to_odom',
+        output='screen',
+        arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom']
+        )
+
     return LaunchDescription(
         [
             gz_resource_path,
@@ -154,7 +177,8 @@ def generate_launch_description():
             robot_state_publisher,
             joint_state_publisher_node,
             start_gazebo_ros_spawner_cmd,
+            pedestrian_tf_broadcaster,
+            tf_statique_map_to_odom,
             #rviz,
-            
         ]
     )
