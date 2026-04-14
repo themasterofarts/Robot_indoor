@@ -4,7 +4,7 @@ from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, SetEnvironmentVariable
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, Command
@@ -16,6 +16,8 @@ def generate_launch_description():
 
     pkg_project_gazebo = get_package_share_directory("robot_indoor")
     pkg_ros_gz_sim = get_package_share_directory("ros_gz_sim")
+    pkg_gazebo_ros_actor_plugin = get_package_share_directory('gazebo_ros_actor_plugin')
+    model_path = os.path.join(pkg_gazebo_ros_actor_plugin, 'config', 'skins')
 
     use_sim_time = LaunchConfiguration("use_sim_time")
 
@@ -32,6 +34,8 @@ def generate_launch_description():
         "robot_description": robot_description_config,
         "use_sim_time": use_sim_time,
     }
+
+    gz_resource_path = SetEnvironmentVariable(name='GZ_SIM_RESOURCE_PATH', value=model_path)
 
     # Setup to launch the simulator and Gazebo world
     gz_sim = IncludeLaunchDescription(
@@ -129,8 +133,32 @@ def generate_launch_description():
         output="screen",
     )
 
+
+    pedestrian_tf_broadcaster = Node(
+        package='robot_indoor',
+        executable='pedestrian_tf_broadcaster.py',
+        name='pedestrian_tf_broadcaster',
+        output='screen',
+        parameters=[{
+            'input_topic': '/actor/pose',
+            'parent_frame': 'map',
+            'child_frame': 'pedestrian',
+            'use_sim_time': True,
+        }]
+        )
+        
+        # 🔹 TF statique map -> odom
+    tf_statique_map_to_odom = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='static_map_to_odom',
+        output='screen',
+        arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom']
+        )
+
     return LaunchDescription(
         [
+            gz_resource_path,
             gz_sim,
             DeclareLaunchArgument(
                 "rviz", default_value="true", description="Open RViz."
@@ -138,11 +166,19 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "use_sim_time", default_value="true", description="Use sim time if true"
             ),
+            DeclareLaunchArgument(
+            'verbose', default_value='True', description='Enable verbose mode for Gazebo'
+            ),   
+            DeclareLaunchArgument(
+            'headless', default_value='False', description='Enable headless mode for Gazebo'
+            ),
             bridge,
             ros_gz_image_bridge,
             robot_state_publisher,
             joint_state_publisher_node,
             start_gazebo_ros_spawner_cmd,
+            pedestrian_tf_broadcaster,
+            tf_statique_map_to_odom,
             #rviz,
         ]
     )
