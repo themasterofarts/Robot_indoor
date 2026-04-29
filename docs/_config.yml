@@ -1,0 +1,4 @@
+title: Robot_indoor
+description: Plateforme academique ROS 2 pour la simulation indoor avec Gazebo, SLAM et Nav2.
+theme: jekyll-theme-minimal
+show_downloads: false

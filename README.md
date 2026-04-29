@@ -1,115 +1,253 @@
 # Robot_indoor
-Développement d’un système de navigation autonome pour un robot mobile en intérieur
 
-![Simulation Navigation Indoor](doc/indoor_nav.png)
+Robot_indoor est une plateforme de développement ROS 2 pour la simulation de robots mobiles en environnement intérieur. Le projet est porté dans un esprit communautaire par MA64 Robotics et s'adresse aux étudiants, enseignants, développeurs et passionnés de robotique qui souhaitent expérimenter la navigation autonome dans un cadre académique et évolutif.
 
-## Description
+![Simulation de navigation indoor](docs/assets/indoor_nav.png)
 
-Robot_indoor est un projet de navigation intérieure pour un robot mobile équipé d’un **LiDAR** et d’une **caméra de profondeur**.  
-Le robot peut construire une **carte 2D** de son environnement en utilisant SLAM Toolbox, se localiser, et naviguer de façon autonome via le système de navigation de Nav2. La simulation est réalisée avec Gazebo Sim Harmonic.  
+## Objectif du projet
 
-Le projet a pour objectif de fournir une base modulaire et collaborative — simulation, cartographie, navigation — afin d’expérimenter la navigation indoor et d’étendre facilement les fonctionnalités (capteurs, évitement d’obstacles, etc.).
+L'objectif principal est de proposer une base de travail claire pour apprendre, tester et étendre des briques de robotique mobile :
+
+- modélisation d'un robot mobile ;
+- simulation sous Gazebo Sim ;
+- cartographie 2D avec SLAM Toolbox ;
+- localisation et navigation autonome avec Nav2 ;
+- visualisation et interaction avec RViz ;
+- expérimentation de scénarios indoor avec obstacles, capteurs et acteurs simulés.
+
+Le projet ne cherche pas à fournir un produit final figé. Il sert plutôt de support d'apprentissage et de développement pour construire progressivement des comportements robotiques plus avancés.
+
+## Contexte
+
+Robot_indoor s'inscrit dans un contexte académique et collaboratif autour de la robotique mobile. Il met l'accent sur la simulation afin de permettre des tests reproductibles sans dépendre immédiatement d'un robot physique.
+
+La plateforme peut être utilisée pour :
+
+- découvrir ROS 2 et ses outils de navigation ;
+- comprendre les interactions entre robot, capteurs, simulateur et pile de navigation ;
+- développer de nouveaux scénarios de simulation ;
+- expérimenter des algorithmes de cartographie, d'exploration ou de suivi ;
+- préparer une transition future vers un robot réel.
 
 ## Fonctionnalités principales
 
-- Construction de carte 2D via SLAM (SLAM Toolbox)    
-- Navigation autonome dans un environnement intérieur  
-- Simulation complète avec Gazebo Sim Harmonic  
-- Support LiDAR + caméra de profondeur  
+- Simulation d'un robot mobile indoor avec Gazebo Sim Harmonic.
+- Description robot via URDF/Xacro.
+- Pont de communication ROS 2 et Gazebo avec `ros_gz_bridge`.
+- Capteurs simulés : LiDAR, caméra, caméra de profondeur, IMU et odométrie.
+- Visualisation avec RViz.
+- Cartographie 2D avec SLAM Toolbox.
+- Navigation autonome avec Nav2.
+- Exploration de frontières via le package `indoor_navigation`.
+- Environnement Docker et Devcontainer pour simplifier l'installation.
 
-## Dépendances
+## Architecture générale
 
-### Système / OS
+Le dépôt est organisé autour de plusieurs composants complémentaires :
 
-- Ubuntu 24.04  
-- ROS2 Jazzy  
+```text
+robot_indoor/
+├── robot_indoor/                 # Package ROS 2 principal : robot, launch, mondes, RViz
+├── indoor_navigation/            # Package ROS 2 pour SLAM, Nav2 et exploration
+├── gazebo-ros-actor-plugin/      # Plugin Gazebo pour acteurs simulés
+├── docker/                       # Image Docker et script de lancement de l'environnement
+├── .devcontainer/                # Configuration Devcontainer pour VS Code
+└── docs/                         # Page GitHub Pages et ressources de documentation
+```
 
-###  ROS2 & packages nécessaires
+Les principaux fichiers de lancement sont :
+
+- `robot_indoor/launch/view.launch.py` : démarre la simulation Gazebo, le robot et les ponts ROS/Gazebo ;
+- `indoor_navigation/launch/mapping.launch.py` : démarre SLAM Toolbox pour créer une carte ;
+- `indoor_navigation/launch/indoor_nav.launch.py` : démarre la pile Nav2 ;
+- `indoor_navigation/launch/frontier_exploration.launch.py` : démarre l'exploration automatique par frontières.
+
+## Technologies utilisées
+
+- Ubuntu 24.04
+- ROS 2 Jazzy
+- Gazebo Sim Harmonic
+- Nav2
+- SLAM Toolbox
+- RViz2
+- `ros_gz`, `ros_gz_bridge`, `ros_gz_image`
+- URDF et Xacro
+- Python et CMake
+- Docker et Devcontainer
+- GitHub Actions pour l'intégration continue
+- GitHub Pages pour la documentation web
+
+## Installation
+
+Deux méthodes sont possibles : l'environnement Docker recommandé pour démarrer rapidement, ou une installation native sur Ubuntu 24.04 avec ROS 2 Jazzy.
+
+### Méthode recommandée avec Docker
+
+Prérequis :
+
+- Docker installé ;
+- une session graphique Linux avec la variable `DISPLAY` disponible ;
+- un accès GitHub configuré pour cloner le dépôt et ses sous-modules.
 
 ```bash
-
-sudo apt install ros-jazzy-nav2-*
-sudo apt install ros-jazzy-slam-toolbox
-sudo apt install ros-jazzy-robot-state-publisher
-sudo apt install ros-jazzy-joint-state-publisher-gui
-
+git clone git@github.com:themasterofarts/Robot_indoor.git
+cd Robot_indoor
+git submodule update --init --recursive
+./docker/run-dev.sh
 ```
-## Installation & Build
 
-### Créer workspace
+Le script `docker/run-dev.sh` construit l'image si elle n'existe pas encore, puis ouvre un conteneur interactif avec les volumes et variables nécessaires pour Gazebo et RViz.
+
+Dans le conteneur :
+
+```bash
+source /opt/ros/jazzy/setup.bash
+rosdep update
+rosdep install --from-paths . --ignore-src -r -y --rosdistro jazzy
+colcon build --symlink-install
+source install/setup.bash
+```
+
+### Installation native
+
+Prérequis :
+
+- Ubuntu 24.04 ;
+- ROS 2 Jazzy installé ;
+- `rosdep` et `colcon` configurés.
+
+Installer les dépendances principales :
+
+```bash
+sudo apt update
+sudo apt install -y \
+  python3-colcon-common-extensions \
+  python3-rosdep \
+  ros-dev-tools \
+  ros-jazzy-joint-state-publisher \
+  ros-jazzy-joint-state-publisher-gui \
+  ros-jazzy-nav2-bringup \
+  ros-jazzy-navigation2 \
+  ros-jazzy-robot-state-publisher \
+  ros-jazzy-ros-gz \
+  ros-jazzy-ros-gz-bridge \
+  ros-jazzy-ros-gz-image \
+  ros-jazzy-ros-gz-sim \
+  ros-jazzy-rviz2 \
+  ros-jazzy-slam-toolbox \
+  ros-jazzy-tf2-ros \
+  ros-jazzy-xacro
+```
+
+Cloner et construire le projet :
+
 ```bash
 mkdir -p ~/ros2_ws/src
 cd ~/ros2_ws/src
-```
+git clone git@github.com:themasterofarts/Robot_indoor.git
+cd Robot_indoor
+git submodule update --init --recursive
 
-### Cloner le dépôt
-```bash
-git clone https://github.com/themasterofarts/Robot_indoor.git
 cd ~/ros2_ws
-```
-
-### Installer les dépendances
-```bash
-rosdep install --from-paths src --ignore-src -r -y
-```
-
-### Construction  et source de l'environnement
-```bash
-colcon build
+source /opt/ros/jazzy/setup.bash
+rosdep update
+rosdep install --from-paths src --ignore-src -r -y --rosdistro jazzy
+colcon build --symlink-install
 source install/setup.bash
-
 ```
+
+## Utilisation
 
 ### Lancer la simulation
+
+Dans un terminal préparé avec l'environnement ROS 2 :
+
 ```bash
 ros2 launch robot_indoor view.launch.py
 ```
 
-### Lancer les serveurs de Nav2
+Cette commande démarre Gazebo, charge le monde de simulation, génère le robot et active les ponts de communication entre ROS 2 et Gazebo.
+
+### Créer une carte avec SLAM Toolbox
+
+Dans un second terminal :
+
 ```bash
+source install/setup.bash
+ros2 launch indoor_navigation mapping.launch.py
+```
+
+Le robot peut ensuite être déplacé dans l'environnement afin de construire une carte 2D.
+
+### Lancer la navigation autonome
+
+```bash
+source install/setup.bash
 ros2 launch indoor_navigation indoor_nav.launch.py
 ```
 
-### Creation de la carte
+La navigation s'appuie sur Nav2 et peut être pilotée depuis RViz avec un objectif de navigation.
+
+### Lancer l'exploration de frontières
+
 ```bash
-ros2 launch indoor_navigation mapping.launch.py
-```
-## Comment contribuer
-
-Les contributions sont les bienvenues ! Que ce soit pour :
-
-- l’ajout de fonctionnalités (capteurs, algorithmes, environnement,…),
-
-- l’amélioration de la navigation ou de la simulation,
-
-- l’optimisation de la cartographie / localisation,
-
-- l’écriture de documentation,
-
-- la correction de bugs,
-
-- des tests ou validations.
-
-Processus proposé :
-
-- Fork du dépôt.
-
-- Créer une branche pour ta feature / correction :
-```bash
-git checkout -b feature/ma-nouvelle-feature
+source install/setup.bash
+ros2 launch indoor_navigation frontier_exploration.launch.py
 ```
 
-- Implémenter la modification, puis committer avec un message clair & significatif.
+Cette commande démarre un noeud d'exploration qui sélectionne des frontières à partir de la carte afin de proposer des objectifs de navigation.
 
-- Pousser la branche sur ton fork.
+## Exemples simples
 
-- Ouvrir une Pull Request vers la branche main du dépôt original.
+Envoyer une commande de vitesse ponctuelle :
 
-Tu peux aussi ouvrir Issues pour signaler des bugs ou proposer des améliorations avant de coder.
+```bash
+ros2 topic pub /cmd_vel geometry_msgs/msg/Twist \
+  "{linear: {x: 0.2}, angular: {z: 0.0}}" --once
+```
 
-Merci d’avance pour tes contributions ! 🙏
+Afficher les topics disponibles :
+
+```bash
+ros2 topic list
+```
+
+Vérifier la disponibilité des packages du projet :
+
+```bash
+ros2 pkg list | grep -E "robot_indoor|indoor_navigation"
+```
+
+Voir la démonstration vidéo :
+
+[Démonstration de navigation indoor](docs/assets/indoor_nav_v.mp4)
 
 
-## Démonstration
+## Documentation GitHub Pages
 
-![Simulation Navigation Indoor](doc/indoor_nav_v.mp4)
+Une page web légère est disponible l'URL attendue est:
+```text
+https://themasterofarts.github.io/Robot_indoor/
+```
+- Page web : [Robot_indoor](https://themasterofarts.github.io/Robot_indoor/)
+
+## Contribution
+
+Les contributions sont bienvenues. Le projet peut évoluer par ajout de capteurs, amélioration des mondes Gazebo, optimisation de la navigation, correction de bugs, rédaction de documentation ou ajout de scénarios pédagogiques.
+
+Processus recommandé :
+
+```bash
+git checkout -b feature/ma-contribution
+git add .
+git commit -m "feat: describe the contribution"
+git push origin feature/ma-contribution
+```
+
+Il est ensuite possible d'ouvrir une Pull Request vers la branche principale du dépôt. Les Issues peuvent aussi être utilisées pour signaler un bug, proposer une amélioration ou discuter d'une idée avant de l'implémenter.
+
+## Contact
+
+- Projet : MA64 Robotics
+- Dépôt GitHub : [themasterofarts/Robot_indoor](https://github.com/themasterofarts/Robot_indoor)
+- Mainteneur : `klein <kleinfy51@gmail.com>`
