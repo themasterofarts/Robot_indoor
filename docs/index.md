@@ -5,199 +5,157 @@ title: Robot_indoor
 
 # Robot_indoor
 
-Robot_indoor est une plateforme de développement ROS 2 pour la simulation de robots mobiles en environnement intérieur. Le projet est porté dans un esprit communautaire par MA64 Robotics et vise à offrir un support académique, simple à prendre en main et évolutif.
+Robot_indoor est une plateforme académique et communautaire de simulation robotique portée par MA64 Robotics. Son ambition est de fournir un environnement clair, évolutif et accessible pour comprendre, tester et développer des comportements de robots mobiles en intérieur.
 
 ![Simulation de navigation indoor](assets/indoor_nav.png)
 
-## Objectif
+## Vision du projet
 
-Le projet fournit une base de travail pour apprendre et expérimenter la robotique mobile indoor :
+La robotique mobile demande de relier plusieurs domaines qui sont souvent étudiés séparément : modélisation, simulation, perception, cartographie, localisation, navigation, visualisation et interaction avec l'environnement.
 
-- simuler un robot mobile dans Gazebo ;
-- exploiter des capteurs simulés comme le LiDAR, la caméra de profondeur, l'IMU et l'odométrie ;
-- créer une carte 2D avec SLAM Toolbox ;
-- lancer la navigation autonome avec Nav2 ;
-- visualiser et piloter les scénarios avec RViz ;
-- étendre progressivement la plateforme avec de nouveaux comportements.
+Robot_indoor cherche à réunir ces briques dans une plateforme unique, suffisamment simple pour apprendre, mais suffisamment ouverte pour évoluer vers des scénarios plus avancés.
 
-## Contexte
+Le projet vise trois objectifs principaux :
 
-Robot_indoor s'adresse aux étudiants, enseignants, développeurs et passionnés de robotique qui souhaitent travailler sur une plateforme de simulation reproductible. Le projet privilégie la compréhension des composants ROS 2 et la possibilité de faire évoluer l'architecture sans dépendre immédiatement d'un robot physique.
+- offrir un support pédagogique pour découvrir la robotique mobile avec ROS 2 ;
+- permettre l'expérimentation sans dépendre immédiatement d'un robot physique ;
+- construire progressivement une base commune réutilisable par la communauté MA64 Robotics.
 
-## Fonctionnalités principales
+## Pourquoi la simulation
 
-- Simulation indoor avec Gazebo Sim Harmonic.
-- Description du robot avec URDF et Xacro.
-- Pont ROS 2 et Gazebo via `ros_gz_bridge`.
-- Cartographie avec SLAM Toolbox.
-- Navigation autonome avec Nav2.
-- Visualisation avec RViz.
-- Exploration automatique de frontières.
-- Environnement Docker et Devcontainer.
+La simulation permet de tester rapidement des idées, de reproduire des scénarios et d'observer le comportement du robot dans un environnement contrôlé. Elle est particulièrement utile pour un projet académique, car elle réduit les contraintes matérielles tout en conservant une logique proche d'un système robotique réel.
 
-## Architecture générale
+Avec Gazebo, ROS 2, Nav2 et SLAM Toolbox, Robot_indoor permet d'aborder les étapes essentielles d'un robot mobile autonome :
 
-```text
-robot_indoor/
-├── robot_indoor/                 # Robot, mondes Gazebo, fichiers launch, RViz
-├── indoor_navigation/            # SLAM, Nav2 et exploration
-├── gazebo-ros-actor-plugin/      # Plugin Gazebo pour acteurs simulés
-├── docker/                       # Image Docker et script de développement
-├── .devcontainer/                # Configuration VS Code Devcontainer
-└── docs/                         # Documentation GitHub Pages et ressources associées
-```
+- percevoir l'environnement avec des capteurs simulés ;
+- construire ou utiliser une carte ;
+- estimer la position du robot ;
+- planifier une trajectoire ;
+- exécuter un déplacement ;
+- observer et analyser le résultat dans RViz.
 
-## Technologies
+## Public visé
 
-- Ubuntu 24.04
-- ROS 2 Jazzy
-- Gazebo Sim Harmonic
-- Nav2
-- SLAM Toolbox
-- RViz2
-- `ros_gz`, `ros_gz_bridge`, `ros_gz_image`
-- URDF et Xacro
-- Python et CMake
-- Docker et Devcontainer
+Le projet s'adresse principalement à :
 
-## Installation rapide avec Docker
+- des étudiants souhaitant comprendre ROS 2 et la navigation mobile ;
+- des enseignants cherchant un support de travaux pratiques ;
+- des développeurs voulant tester des algorithmes dans un cadre reproductible ;
+- des passionnés de robotique qui souhaitent s'exercer sans robot physique ;
+- des contributeurs MA64 Robotics voulant enrichir une base commune.
 
-```bash
-git clone git@github.com:themasterofarts/Robot_indoor.git
-cd Robot_indoor
-git submodule update --init --recursive
-./docker/run-dev.sh
-```
+## Principe général
 
-Dans le conteneur :
-
-```bash
-source /opt/ros/jazzy/setup.bash
-rosdep update
-rosdep install --from-paths . --ignore-src -r -y --rosdistro jazzy
-colcon build --symlink-install
-source install/setup.bash
-```
-
-## Installation native
-
-Sur Ubuntu 24.04 avec ROS 2 Jazzy :
-
-```bash
-sudo apt update
-sudo apt install -y \
-  python3-colcon-common-extensions \
-  python3-rosdep \
-  ros-dev-tools \
-  ros-jazzy-nav2-bringup \
-  ros-jazzy-navigation2 \
-  ros-jazzy-ros-gz \
-  ros-jazzy-ros-gz-bridge \
-  ros-jazzy-ros-gz-image \
-  ros-jazzy-ros-gz-sim \
-  ros-jazzy-rviz2 \
-  ros-jazzy-slam-toolbox \
-  ros-jazzy-xacro
-```
-
-```bash
-mkdir -p ~/ros2_ws/src
-cd ~/ros2_ws/src
-git clone git@github.com:themasterofarts/Robot_indoor.git
-cd Robot_indoor
-git submodule update --init --recursive
-
-cd ~/ros2_ws
-source /opt/ros/jazzy/setup.bash
-rosdep update
-rosdep install --from-paths src --ignore-src -r -y --rosdistro jazzy
-colcon build --symlink-install
-source install/setup.bash
-```
-
-## Utilisation
-
-Lancer la simulation :
-
-```bash
-ros2 launch robot_indoor view.launch.py
-```
-
-Créer une carte :
-
-```bash
-ros2 launch indoor_navigation mapping.launch.py
-```
-
-Lancer la navigation autonome :
-
-```bash
-ros2 launch indoor_navigation indoor_nav.launch.py
-```
-
-Lancer l'exploration de frontières :
-
-```bash
-ros2 launch indoor_navigation frontier_exploration.launch.py
-```
-
-## Exemples
-
-Afficher les topics ROS 2 :
-
-```bash
-ros2 topic list
-```
-
-Envoyer une commande de vitesse simple :
-
-```bash
-ros2 topic pub /cmd_vel geometry_msgs/msg/Twist \
-  "{linear: {x: 0.2}, angular: {z: 0.0}}" --once
-```
-
-Vérifier les packages du projet :
-
-```bash
-ros2 pkg list | grep -E "robot_indoor|indoor_navigation"
-```
-
-Voir la démonstration vidéo :
-
-[Démonstration de navigation indoor](assets/indoor_nav_v.mp4)
-
-## Captures et schémas prévus
-
-La documentation pourra être enrichie avec :
-
-- un schéma global ROS 2, Gazebo, Nav2 et RViz ;
-- une capture du robot dans Gazebo ;
-- une capture de carte générée avec SLAM Toolbox ;
-- une vidéo de navigation autonome ;
-- un schéma des topics principaux.
-
-## Publication GitHub Pages
-
-Cette page est conçue pour être publiée depuis le dossier `docs/`.
-
-```bash
-git add README.md docs/
-git commit -m "docs: add project documentation page"
-git push origin main
-```
-
-Dans GitHub, ouvrir `Settings`, puis `Pages`, choisir `Deploy from a branch`, sélectionner `main` et le dossier `/docs`.
-
-URL attendue :
+Robot_indoor s'appuie sur une architecture modulaire. Chaque composant joue un rôle précis dans la chaîne robotique.
 
 ```text
-https://themasterofarts.github.io/Robot_indoor/
+Simulation Gazebo
+        |
+        v
+Robot simulé + capteurs
+        |
+        v
+Pont ROS 2 / Gazebo
+        |
+        v
+SLAM, localisation, navigation
+        |
+        v
+Visualisation et commandes dans RViz
 ```
 
-## Contribution et contact
+Cette organisation aide à comprendre comment les informations circulent entre le simulateur, les capteurs, les topics ROS 2 et les noeuds de navigation.
 
-Les contributions sont bienvenues : documentation, scénarios Gazebo, amélioration de la navigation, exploration, tests ou corrections de bugs.
+## Composants du projet
+
+Le dépôt est construit autour de plusieurs blocs :
+
+- `robot_indoor` : description du robot, mondes Gazebo, fichiers de lancement, configuration RViz et ponts ROS/Gazebo ;
+- `indoor_navigation` : configuration de cartographie, navigation autonome et exploration ;
+- `gazebo-ros-actor-plugin` : extension Gazebo pour intégrer des acteurs simulés ;
+- `docker` et `.devcontainer` : environnement reproductible pour développer plus facilement ;
+- `docs` : documentation web et ressources de présentation.
+
+Le README du dépôt reste le document de référence pour l'installation, les commandes de lancement et les exemples techniques.
+
+## Ce que le projet permet aujourd'hui
+
+Robot_indoor permet actuellement de :
+
+- lancer une simulation indoor avec un robot mobile ;
+- afficher le robot et son environnement dans Gazebo ;
+- publier les données de capteurs vers ROS 2 ;
+- créer une carte avec SLAM Toolbox ;
+- utiliser Nav2 pour la navigation autonome ;
+- visualiser les informations principales dans RViz ;
+- lancer une exploration basée sur les frontières ;
+- travailler dans un environnement Docker ou Devcontainer.
+
+## Plan d'évolution
+
+Robot_indoor est pensé comme un projet progressif. Les étapes suivantes peuvent guider son développement.
+
+### Étape 1 : stabiliser la base
+
+- consolider les fichiers de lancement ;
+- clarifier les dépendances ROS 2 ;
+- documenter les scénarios de base ;
+- vérifier le fonctionnement Docker et Devcontainer ;
+- maintenir une intégration continue fiable.
+
+### Étape 2 : améliorer la compréhension pédagogique
+
+- ajouter des schémas de flux ROS 2 ;
+- expliquer les topics et frames principaux ;
+- documenter le rôle des capteurs simulés ;
+- proposer des exercices simples ;
+- ajouter des captures commentées de Gazebo, RViz et Nav2.
+
+### Étape 3 : enrichir les scénarios de simulation
+
+- créer plusieurs mondes indoor ;
+- ajouter des obstacles dynamiques ;
+- intégrer des acteurs simulés plus réalistes ;
+- varier les conditions de navigation ;
+- proposer des scénarios de test reproductibles.
+
+### Étape 4 : développer l'autonomie
+
+- améliorer l'exploration automatique ;
+- tester plusieurs stratégies de navigation ;
+- intégrer des comportements de suivi ou d'évitement ;
+- comparer les performances selon les cartes et paramètres ;
+- préparer des démonstrations complètes.
+
+### Étape 5 : préparer l'ouverture vers le réel
+
+- identifier les écarts entre simulation et robot physique ;
+- isoler les paramètres dépendants du matériel ;
+- préparer une architecture transférable ;
+- documenter les contraintes de capteurs, odométrie et calibration.
+
+## Axes de contribution
+
+Les contributions peuvent porter sur plusieurs aspects :
+
+- documentation et supports pédagogiques ;
+- amélioration des mondes Gazebo ;
+- ajout ou configuration de capteurs ;
+- navigation et exploration ;
+- visualisation RViz ;
+- tests, validation et intégration continue ;
+- scénarios de démonstration ;
+- préparation d'une future transition vers un robot réel.
+
+L'objectif n'est pas seulement d'ajouter du code, mais aussi de rendre le projet plus compréhensible, plus fiable et plus utile pour apprendre.
+
+## Ressources
 
 - Dépôt GitHub : [themasterofarts/Robot_indoor](https://github.com/themasterofarts/Robot_indoor)
+- Documentation technique : [README du projet](https://github.com/themasterofarts/Robot_indoor#readme)
+- Démonstration vidéo : [navigation indoor](assets/indoor_nav_v.mp4)
 - Projet : MA64 Robotics
-- Contact mainteneur : `klein <kleinfy51@gmail.com>`
+
+## Esprit du projet
+
+Robot_indoor est un point de départ. Il doit rester lisible, modulaire et accueillant pour les nouveaux contributeurs. Chaque amélioration doit aider le lecteur ou le développeur suivant à mieux comprendre la robotique mobile, à expérimenter plus facilement et à construire sur une base commune.

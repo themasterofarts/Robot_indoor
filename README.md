@@ -222,43 +222,14 @@ Voir la démonstration vidéo :
 
 [Démonstration de navigation indoor](docs/assets/indoor_nav_v.mp4)
 
-## Captures et schémas à ajouter
-
-Cette section peut être enrichie au fur et à mesure du développement :
-
-- schéma général ROS 2, Gazebo, Nav2 et RViz ;
-- capture du robot dans Gazebo ;
-- capture de la carte générée par SLAM Toolbox ;
-- capture d'une navigation dans RViz ;
-- schéma des topics principaux ;
-- vidéo courte d'un scénario complet.
 
 ## Documentation GitHub Pages
 
-Une page web légère est disponible dans le dossier `docs/`. Elle peut être publiée avec GitHub Pages depuis la branche `main`, source `/docs`.
-
-Commandes proposées :
-
-```bash
-git add README.md docs/
-git commit -m "docs: add project documentation page"
-git push origin main
-```
-
-Dans GitHub :
-
-1. Ouvrir `Settings`.
-2. Aller dans `Pages`.
-3. Choisir `Deploy from a branch`.
-4. Sélectionner la branche `main`.
-5. Sélectionner le dossier `/docs`.
-6. Enregistrer.
-
-L'URL attendue sera généralement :
-
+Une page web légère est disponible l'URL attendue est:
 ```text
 https://themasterofarts.github.io/Robot_indoor/
 ```
+- Page web : [Robot_indoor](https://themasterofarts.github.io/Robot_indoor/)
 
 ## Contribution
 
@@ -279,4 +250,4 @@ Il est ensuite possible d'ouvrir une Pull Request vers la branche principale du 
 
 - Projet : MA64 Robotics
 - Dépôt GitHub : [themasterofarts/Robot_indoor](https://github.com/themasterofarts/Robot_indoor)
-- Mainteneur indiqué dans les packages ROS 2 : `klein <kleinfy51@gmail.com>`
+- Mainteneur : `klein <kleinfy51@gmail.com>`
