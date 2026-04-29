@@ -2,7 +2,7 @@
 
 Robot_indoor est une plateforme de développement ROS 2 pour la simulation de robots mobiles en environnement intérieur. Le projet est porté dans un esprit communautaire par MA64 Robotics et s'adresse aux étudiants, enseignants, développeurs et passionnés de robotique qui souhaitent expérimenter la navigation autonome dans un cadre académique et évolutif.
 
-![Simulation de navigation indoor](doc/indoor_nav.png)
+![Simulation de navigation indoor](docs/assets/indoor_nav.png)
 
 ## Objectif du projet
 
@@ -52,8 +52,7 @@ robot_indoor/
 ├── gazebo-ros-actor-plugin/      # Plugin Gazebo pour acteurs simulés
 ├── docker/                       # Image Docker et script de lancement de l'environnement
 ├── .devcontainer/                # Configuration Devcontainer pour VS Code
-├── doc/                          # Images et démonstrations du projet
-└── docs/                         # Page GitHub Pages de documentation
+└── docs/                         # Page GitHub Pages et ressources de documentation
 ```
 
 Les principaux fichiers de lancement sont :
@@ -221,7 +220,7 @@ ros2 pkg list | grep -E "robot_indoor|indoor_navigation"
 
 Voir la démonstration vidéo :
 
-[Démonstration de navigation indoor](doc/indoor_nav_v.mp4)
+[Démonstration de navigation indoor](docs/assets/indoor_nav_v.mp4)
 
 ## Captures et schémas à ajouter
 

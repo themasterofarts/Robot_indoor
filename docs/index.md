@@ -44,8 +44,7 @@ robot_indoor/
 ├── gazebo-ros-actor-plugin/      # Plugin Gazebo pour acteurs simulés
 ├── docker/                       # Image Docker et script de développement
 ├── .devcontainer/                # Configuration VS Code Devcontainer
-├── doc/                          # Images et démonstrations
-└── docs/                         # Documentation GitHub Pages
+└── docs/                         # Documentation GitHub Pages et ressources associées
 ```
 
 ## Technologies
@@ -162,6 +161,10 @@ Vérifier les packages du projet :
 ```bash
 ros2 pkg list | grep -E "robot_indoor|indoor_navigation"
 ```
+
+Voir la démonstration vidéo :
+
+[Démonstration de navigation indoor](assets/indoor_nav_v.mp4)
 
 ## Captures et schémas prévus
 
