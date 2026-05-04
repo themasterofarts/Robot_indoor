@@ -1,0 +1,38 @@
+{
+  "name": "robot-indoor-jazzy",
+  "build": {
+    "context": "..",
+    "dockerfile": "../docker/Dockerfile",
+    "args": {
+      "USERNAME": "vscode",
+      "USER_UID": "1000",
+      "USER_GID": "1000"
+    }
+  },
+  "workspaceFolder": "/workspaces/robot_indoor",
+  "remoteUser": "vscode",
+  "runArgs": [
+    "--network=host",
+    "--ipc=host",
+    "--env=DISPLAY=${localEnv:DISPLAY}",
+    "--env=QT_X11_NO_MITSHM=1",
+    "--volume=/tmp/.X11-unix:/tmp/.X11-unix:rw",
+    "--device=/dev/dri:/dev/dri"
+  ],
+  "containerEnv": {
+    "DISPLAY": "${localEnv:DISPLAY}",
+    "QT_X11_NO_MITSHM": "1"
+  },
+  "initializeCommand": "bash -lc 'xhost +si:localuser:klein >/dev/null 2>&1 || true'",
+  "postCreateCommand": "bash -lc 'rosdep update && rosdep install --from-paths . --ignore-src -r -y --rosdistro $ROS_DISTRO && colcon build --symlink-install'",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-iot.vscode-ros",
+        "ms-python.python",
+        "ms-vscode.cpptools",
+        "twxs.cmake"
+      ]
+    }
+  }
+}
