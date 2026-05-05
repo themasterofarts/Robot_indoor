@@ -1,3 +1,0 @@
-[submodule "gazebo-ros-actor-plugin"]
-	path = gazebo-ros-actor-plugin
-	url = git@github.com:themasterofarts/gazebo-ros-actor-plugin.git
