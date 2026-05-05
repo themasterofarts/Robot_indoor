@@ -1,16 +1,5 @@
-"""
-follower_functions.py
----------------------
-Pure Python (zero ROS2 / zero external deps) utilities for the actor follower.
+#follower_functions.py
 
-Changelog:
-  - Fix 1   : compute_follow_goal_predictive() — prédiction vitesse acteur.
-  - Fix 2a  : _find_nearest_free_goal() — fallback euclidien rayon 15 cellules.
-  - Fix B   : theta_star_with_fallback() — inflation adaptative couloirs étroits.
-  - Codex 1 : should_replan() comparaison cohérente — deux goals statiques.
-  - Codex 2 : world_to_grid() utilise math.floor() au lieu de int()
-              pour éviter la troncature incorrecte sur coordonnées négatives.
-"""
 
 from __future__ import annotations
 
@@ -81,13 +70,7 @@ OCCUPANCY_THRESHOLD = 50
 
 
 def world_to_grid(wx: float, wy: float, info: MapInfo) -> Tuple[int, int]:
-    """
-    Codex 2 — math.floor() au lieu de int().
-    int() tronque vers zéro : int(-0.3/0.05) = -6 au lieu de -7.
-    Avec origin=[-1.19, -3.4], des coordonnées légèrement négatives
-    seraient acceptées comme cellule 0 et produiraient des chemins faux.
-    math.floor() arrondit toujours vers -inf, comportement correct.
-    """
+    "
     col = math.floor((wx - info.origin_x) / info.resolution)
     row = math.floor((wy - info.origin_y) / info.resolution)
     if 0 <= col < info.width and 0 <= row < info.height:
@@ -158,10 +141,6 @@ def _find_nearest_free_goal(
     robot_radius_m: float,
     max_radius: int = 15,
 ) -> Tuple[int, int]:
-    """
-    Fix 2a — Cherche la cellule libre la plus proche de (gx, gy)
-    par carrés concentriques. Retourne (-1, -1) si rien trouvé.
-    """
     for r in range(1, max_radius + 1):
         candidates: List[Tuple[float, int, int]] = []
         for dc in range(-r, r + 1):
@@ -182,9 +161,7 @@ def theta_star(start_world: Tuple[float, float],
                grid_data: List[int],
                info: MapInfo,
                robot_radius_m: float = 0.20) -> List[WayPoint]:
-    """
-    Theta* any-angle path planner. Retourne [] si aucun chemin trouvé.
-    """
+    
     sx, sy = world_to_grid(*start_world, info)
     gx, gy = world_to_grid(*goal_world, info)
 
@@ -268,15 +245,7 @@ def theta_star_with_fallback(
     robot_radius_m: float = 0.20,
     min_radius_m: float = 0.08,
 ) -> List[WayPoint]:
-    """
-    Fix B — Tente Theta* avec robot_radius_m nominal.
-    Si aucun chemin, retente avec inflation réduite par paliers de 0.04 m
-    jusqu'à min_radius_m. Utile dans les couloirs étroits où l'inflation
-    nominale bouche toutes les cellules libres.
-
-    min_radius_m=0.08 : 2 cellules à resolution=0.05 — marge minimale
-    acceptable en simulation. À ajuster si le robot réel est plus large.
-    """
+    
     path = theta_star(start_world, goal_world, grid_data, info, robot_radius_m)
     if path:
         return path
@@ -297,10 +266,7 @@ def theta_star_with_fallback(
 
 def compute_follow_goal(actor_x: float, actor_y: float, actor_yaw: float,
                         follow_distance: float = 0.5) -> Tuple[float, float]:
-    """
-    Point situé follow_distance mètres derrière l'acteur (non prédictif).
-    Utilisé par should_replan() comme référence stable.
-    """
+    
     goal_x = actor_x - follow_distance * math.cos(actor_yaw)
     goal_y = actor_y - follow_distance * math.sin(actor_yaw)
     return goal_x, goal_y
@@ -314,11 +280,7 @@ def compute_follow_goal_predictive(
     prediction_horizon: float = 0.4,
     max_actor_speed: float = 1.5,
 ) -> Tuple[float, float]:
-    """
-    Fix 1 — Extrapole la vitesse de l'acteur sur prediction_horizon secondes
-    puis calcule le follow-goal derrière la position prédite.
-    Utilisé uniquement pour soumettre le goal à Theta*.
-    """
+    
     if dt > 1e-6:
         vx = (actor_x - prev_actor_x) / dt
         vy = (actor_y - prev_actor_y) / dt
@@ -342,12 +304,7 @@ def should_replan(current_goal: Tuple[float, float],
                   actor_x: float, actor_y: float, actor_yaw: float,
                   follow_distance: float = 0.5,
                   move_threshold: float = 0.3) -> bool:
-    """
-    Codex 1 — Comparaison cohérente : on compare le goal statique courant
-    avec le nouveau goal statique. Les deux côtés utilisent compute_follow_goal
-    (non prédictif) pour éviter que la vitesse × horizon injecte un offset
-    artificiel qui déclencherait un replan à chaque cycle.
-    """
+   
     new_goal = compute_follow_goal(actor_x, actor_y, actor_yaw, follow_distance)
     dist = compute_distance(current_goal[0], current_goal[1],
                             new_goal[0], new_goal[1])

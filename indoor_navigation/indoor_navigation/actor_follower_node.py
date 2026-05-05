@@ -1,28 +1,7 @@
+#actor_follower_node.py
+
 #!/usr/bin/env python3
-"""
-actor_follower_node.py
-----------------------
-ROS2 node that orchestrates actor following.
 
-Pipeline (50 Hz loop — non-bloquant) :
-  /actor/pose  ──►  compute_follow_goal_predictive()  ──►  _request_replan()
-  /map         ──►  theta_star_with_fallback() [ProcessPoolExecutor]
-  /tf          ──►  controller.compute_command()  ──►  /cmd_vel
-
-Changelog complet :
-  Fix 1    : Prédiction vitesse acteur (compute_follow_goal_predictive).
-  Fix 2a   : Fallback euclidien rayon 15 cellules (_find_nearest_free_goal).
-  Fix 2b   : Compteur d'échecs unifié _fail_count (STUCK + no-path).
-  Fix 3    : ProcessPoolExecutor — Theta* hors GIL, timer 50 Hz non-bloquant.
-  Fix A    : Reset contrôleur + stop immédiat sur no-path (plus de collision
-             sur plan obsolète).
-  Fix B    : theta_star_with_fallback — inflation adaptative couloirs étroits.
-  ControllerConfig : paramètres vitesse corrigés (lenteur sur ligne droite).
-  Codex 1  : _current_goal stocke le goal STATIQUE pour que should_replan()
-             compare des valeurs cohérentes — évite replan à chaque cycle.
-  Codex 2  : world_to_grid() utilise math.floor() (dans follower_functions).
-  Codex 3  : Topic /actor/pose configurable via paramètre ROS2.
-"""
 
 from __future__ import annotations
 
@@ -64,27 +43,22 @@ REPLAN_THRESHOLD   = 0.3
 ROBOT_RADIUS       = 0.20
 STOP_DISTANCE      = 0.45
 
-# Fix 1 — prédiction
+
 PREDICTION_HORIZON = 0.4
 MAX_ACTOR_SPEED    = 1.5
 
-# Fix 2b — échecs unifiés
+
 FAIL_MAX           = 3
 FOLLOW_DIST_MAX    = 1.5
 FOLLOW_DIST_STEP   = 0.25
 FOLLOW_DIST_DECAY  = 0.02
 
-# Codex 3 — topic par défaut (peut être surchargé via paramètre)
 DEFAULT_ACTOR_TOPIC = "/actor/pose"
 
 MAP_FRAME  = "map"
 BASE_FRAME = "base_link"
 
 
-# ---------------------------------------------------------------------------
-# Fonction top-level pour ProcessPoolExecutor
-# Doit être importable par les workers — hors de toute classe.
-# ---------------------------------------------------------------------------
 
 def _run_theta_star(
     start_world: tuple[float, float],
@@ -115,7 +89,6 @@ class ActorFollowerNode(Node):
         self.declare_parameter("control_hz", float(CONTROL_HZ))
         self.declare_parameter("prediction_horizon", PREDICTION_HORIZON)
         self.declare_parameter("max_actor_speed", MAX_ACTOR_SPEED)
-        # Codex 3 — topic configurable
         self.declare_parameter("actor_pose_topic", DEFAULT_ACTOR_TOPIC)
 
         self._follow_dist         = self.get_parameter("follow_distance").value
@@ -132,9 +105,7 @@ class ActorFollowerNode(Node):
         self._map: OccupancyGrid | None = None
         self._map_info: MapInfo | None = None
 
-        # Codex 1 — _current_goal stocke le goal STATIQUE (compute_follow_goal)
-        # pour que should_replan() compare des valeurs cohérentes.
-        # Le goal prédictif est passé à Theta* mais n'est PAS stocké ici.
+        #
         self._current_goal: tuple[float, float] | None = None
 
         self._seen_actor_pose   = False
@@ -144,22 +115,21 @@ class ActorFollowerNode(Node):
         self._warned_map        = False
         self._warned_tf         = False
 
-        # Fix 1 — état précédent acteur
+        
         self._prev_actor_x: float = 0.0
         self._prev_actor_y: float = 0.0
         self._prev_actor_time: float = 0.0
 
-        # Fix 2b — compteur échecs unifié
+        
         self._fail_count: int = 0
 
-        # Fix 3 — ProcessPoolExecutor
+      
         self._executor_pool = ProcessPoolExecutor(max_workers=1)
         self._future: Future | None = None
-        # _pending_goal stocke le goal STATIQUE associé au future en cours
-        # (pour mise à jour de _current_goal après succès Theta*)
+        
         self._pending_static_goal: tuple[float, float] | None = None
 
-        # ── ControllerConfig corrigé (lenteur sur ligne droite) ──────────────
+        
         cfg = ControllerConfig(
             max_linear_speed=0.8,
             max_angular_speed=1.5,
@@ -183,7 +153,7 @@ class ActorFollowerNode(Node):
         self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
 
         # ── Subscribers ──────────────────────────────────────────────────────
-        # Codex 3 — topic configurable via paramètre
+       
         self.create_subscription(
             PoseStamped, actor_topic, self._actor_pose_cb, 10
         )
@@ -307,7 +277,7 @@ class ActorFollowerNode(Node):
         )
         actor_x, actor_y = ap.position.x, ap.position.y
 
-        # Fix 1 — dt acteur pour estimation de vitesse
+        
         now_sec = now.nanoseconds * 1e-9
         actor_dt = (
             now_sec - self._prev_actor_time
@@ -343,7 +313,7 @@ class ActorFollowerNode(Node):
                         f"{self._current_goal[1]:.2f})"
                     )
                 else:
-                    # Fix A — reset immédiat sur no-path pour éviter
+                    # Reset immédiat sur no-path pour éviter
                     # que le robot continue sur un plan obsolète vers un mur
                     self.get_logger().warn(
                         f"Theta* : aucun chemin vers "
@@ -425,16 +395,10 @@ class ActorFollowerNode(Node):
         elif status == ControlStatus.NO_PLAN:
             self._stop()
 
-    # ────────────────────────────────────────────────────────────────────────
-    # Fix 2b — gestion unifiée des échecs (STUCK + no-path)
-    # ────────────────────────────────────────────────────────────────────────
+    
 
     def _handle_failure(self, reason: str) -> None:
-        """
-        Incrémente _fail_count. Après FAIL_MAX échecs consécutifs
-        (toutes causes : STUCK ou Theta* no-path), augmente follow_distance
-        pour viser un point plus dégagé.
-        """
+       
         self._fail_count += 1
         self.get_logger().warn(
             f"Échec [{reason}] — {self._fail_count}/{FAIL_MAX}"
@@ -449,9 +413,7 @@ class ActorFollowerNode(Node):
             )
             self._fail_count = 0
 
-    # ────────────────────────────────────────────────────────────────────────
-    # Fix 3 — Theta* dans un process séparé (hors GIL)
-    # ────────────────────────────────────────────────────────────────────────
+    #
 
     def _request_replan(
         self,
@@ -460,14 +422,7 @@ class ActorFollowerNode(Node):
         prev_actor_x: float, prev_actor_y: float,
         actor_dt: float,
     ) -> None:
-        """
-        Soumet Theta* au ProcessPoolExecutor si aucun calcul n'est en cours.
-        Le process worker reçoit des copies sérialisées — aucun état partagé.
-
-        Codex 1 — on calcule et mémorise le goal STATIQUE comme référence
-        pour should_replan(), et on passe le goal PRÉDICTIF à Theta* pour
-        que le robot anticipe les virages.
-        """
+        
         if self._future is not None and not self._future.done():
             return
 
@@ -510,9 +465,7 @@ class ActorFollowerNode(Node):
             robot_radius,
         )
 
-    # ────────────────────────────────────────────────────────────────────────
-    # Helpers
-    # ────────────────────────────────────────────────────────────────────────
+   
 
     def _stop(self, reason: str = "") -> None:
         if reason:
@@ -524,10 +477,7 @@ class ActorFollowerNode(Node):
         super().destroy_node()
 
 
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
-
+#
 def main(args=None):
     rclpy.init(args=args)
     node = ActorFollowerNode()
