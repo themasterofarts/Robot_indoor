@@ -2,20 +2,51 @@ import math
 import random
 
 
-def straight_line(length=None, num_points=50):
+def straight_line(rng: random.Random, length: float = None, num_points: int = 50) -> list:
+    """
+    Génère un segment rectiligne le long de l'axe X.
+
+    Args:
+        rng        : instance Random isolée (n'affecte pas le RNG global)
+        length     : longueur du segment en mètres (aléatoire si None)
+        num_points : nombre de waypoints
+
+    Returns:
+        liste de tuples (x, y)
+    """
     if length is None:
-        length = random.uniform(3.0, 6.0)
+        length = rng.uniform(3.0, 6.0)
+
     step = length / num_points
     return [(i * step, 0.0) for i in range(num_points)]
 
 
-def random_arc(radius=None, angle=None, direction=None, num_points=80):
+def random_arc(
+    rng: random.Random,
+    radius: float = None,
+    angle: float = None,
+    direction: int = None,
+    num_points: int = 80
+) -> list:
+    """
+    Génère un arc de cercle.
+
+    Args:
+        rng        : instance Random isolée
+        radius     : rayon de l'arc en mètres (aléatoire si None)
+        angle      : angle total de l'arc en radians (aléatoire si None)
+        direction  : 1 = gauche, -1 = droite (aléatoire si None)
+        num_points : nombre de waypoints
+
+    Returns:
+        liste de tuples (x, y)
+    """
     if radius is None:
-        radius = random.uniform(1.5, 3.5)
+        radius = rng.uniform(1.5, 3.5)
     if angle is None:
-        angle = random.uniform(math.pi / 3, math.pi)
+        angle = rng.uniform(math.pi / 3, math.pi)
     if direction is None:
-        direction = random.choice([-1, 1])
+        direction = rng.choice([-1, 1])
 
     points = []
     for i in range(num_points):
@@ -27,67 +58,103 @@ def random_arc(radius=None, angle=None, direction=None, num_points=80):
     return points
 
 
-def zig_zag(length=None, amplitude=1.0, num_zigs=5, num_points=100):
+def zig_zag(
+    rng: random.Random,
+    length: float = None,
+    amplitude: float = 0.6,
+    num_zigs: int = 5,
+    num_points: int = 100
+) -> list:
+    """
+    Génère un segment en zigzag avec transitions lissées (sinusoïde).
+
+    CORRECTION : l'ancienne version utilisait abs(2t - 1) ce qui créait
+    des pics anguleux (discontinuités de dérivée). Un robot différentiel
+    à vitesse limitée ne peut pas suivre ces angles brusques.
+    On utilise maintenant une sinusoïde qui est infiniment dérivable.
+
+    L'amplitude est aussi réduite (1.0 → 0.6) pour rester réaliste.
+
+    Args:
+        rng        : instance Random isolée
+        length     : longueur totale en mètres (aléatoire si None)
+        amplitude  : hauteur des oscillations en mètres
+        num_zigs   : nombre de périodes
+        num_points : nombre de waypoints
+
+    Returns:
+        liste de tuples (x, y)
+    """
     if length is None:
-        length = random.uniform(4.0, 7.0)
+        length = rng.uniform(4.0, 7.0)
+
     points = []
     step = length / num_points
-    zig_width = length / num_zigs
 
     for i in range(num_points):
         x = i * step
-        t = (x % zig_width) / zig_width
-        y = amplitude * (1 - abs(2 * t - 1))
+        # Sinusoïde au lieu de zigzag triangulaire → courbe lisse
+        t = (x / length) * num_zigs * 2 * math.pi
+        y = amplitude * math.sin(t)
         points.append((x, y))
 
     return points
 
 
-def combined_path(seed=None):
-    if seed is not None:
-        random.seed(seed)
+def combined_path(seed: int = None) -> list:
+    """
+    Génère une trajectoire combinée en enchaînant plusieurs segments.
 
-    # 2 à 3 segments de chaque type, plus courts
+    Chaque segment est aligné et translaté pour former un chemin continu.
+    Les segments sont choisis aléatoirement parmi : ligne droite, arc, zigzag.
+
+    CORRECTION : on utilise random.Random(seed) au lieu de random.seed(seed).
+    L'ancienne version modifiait le RNG global de Python, ce qui pouvait
+    affecter d'autres parties du programme utilisant random. Maintenant
+    le générateur est isolé dans cette fonction.
+
+    Args:
+        seed : graine pour la reproductibilité (optionnel)
+
+    Returns:
+        liste de tuples (x, y) représentant la trajectoire complète
+    """
+    # RNG isolé : n'affecte pas random.random() ailleurs dans le programme
+    rng = random.Random(seed)
+
+    # Pool de segments disponibles
     segment_pool = (
         [straight_line] * 2 +
-        [random_arc] * 3 +
-        [zig_zag] * 1
+        [random_arc]    * 3 +
+        [zig_zag]       * 1
     )
 
-    chosen = random.sample(segment_pool, k=random.randint(5, 6))
+    chosen = rng.sample(segment_pool, k=rng.randint(5, 6))
 
     full_path = []
 
     for seg_func in chosen:
-        seg = seg_func()
+        seg = seg_func(rng)
 
         if full_path:
-            last_x = full_path[-1][0]
-            last_y = full_path[-1][1]
-
-            prev_x = full_path[-2][0]
-            prev_y = full_path[-2][1]
+            last_x    = full_path[-1][0]
+            last_y    = full_path[-1][1]
+            prev_x    = full_path[-2][0]
+            prev_y    = full_path[-2][1]
             angle_out = math.atan2(last_y - prev_y, last_x - prev_x)
 
-            first_x = seg[0][0]
-            first_y = seg[0][1]
-            second_x = seg[1][0]
-            second_y = seg[1][1]
-            angle_in = math.atan2(second_y - first_y, second_x - first_x)
+            angle_in = math.atan2(seg[1][1] - seg[0][1], seg[1][0] - seg[0][0])
 
             rotation = angle_out - angle_in
-            cos_r = math.cos(rotation)
-            sin_r = math.sin(rotation)
+            cos_r    = math.cos(rotation)
+            sin_r    = math.sin(rotation)
 
-            rotated = []
-            for x, y in seg:
-                xr = cos_r * x - sin_r * y
-                yr = sin_r * x + cos_r * y
-                rotated.append((xr, yr))
+            rotated = [(cos_r * x - sin_r * y, sin_r * x + cos_r * y) for x, y in seg]
 
-            ox = last_x - rotated[0][0]
-            oy = last_y - rotated[0][1]
+            ox  = last_x - rotated[0][0]
+            oy  = last_y - rotated[0][1]
             seg = [(x + ox, y + oy) for x, y in rotated]
+
             seg = seg[1:]
 
         full_path.extend(seg)
