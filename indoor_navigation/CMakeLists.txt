@@ -21,6 +21,7 @@ ament_python_install_package(${PROJECT_NAME})
 # Install Python node(s) as executables
 install(PROGRAMS
   indoor_navigation/frontier_explorer.py
+  indoor_navigation/stanley_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
