@@ -1,99 +1,97 @@
 # Path Tracker — Stanley Controller
 
 Algorithme : Stanley Controller
-Robot cible : Differentiel (deux roues motrices independantes)
-
+Robot cible : Differentiel (robot indoor MA64 Robotics)
+Wheel base  : 0.297 m (extrait de robot_core_04.xacro)
 
 ## Objectif
 
-Module Python de suivi de trajectoire pour robot differentiel.
-Prend en entree une trajectoire (liste de points 2D) et retourne
-les vitesses des roues gauche et droite a chaque instant.
+Module de suivi de trajectoire base sur le controleur Stanley pour robot
+differentiel. Fournit deux niveaux d utilisation :
 
+1. Simulation standalone (matplotlib) pour valider l algorithme
+2. Noeud ROS 2 pour suivi d acteur en temps reel dans Gazebo
 
-## Pourquoi Stanley 
+## Pourquoi Stanley ?
 
 Stanley Controller corrige simultanement deux erreurs :
-
-- Erreur de cap : difference d'angle entre le robot et la trajectoire
+- Erreur de cap : difference d angle entre le robot et la trajectoire
 - Erreur laterale (CTE) : distance perpendiculaire entre le robot et la trajectoire
 
-
-Stanley est plus precis sur les trajectoires complexes comme les virages serres et le zig zag.
-
 Formule principale :
-
     delta = heading_error + arctan(k * CTE / v)
+    omega = v * tan(delta) / wheel_base
 
+Stanley est adapte aux trajectoires complexes
+car il corrige simultanement cap et position laterale.
 
 ## Structure du projet
 
     path_tracker/
-    base_tracker.py   : Interface commune a tous les algorithmes
-    robot_model.py    : Modele cinematique differentiel
-    trajectory.py     : Generateur de trajectoires (arc, ligne droite, zig zag)
-    stanley.py        : Implementation Stanley Controller
-    simulator.py      : Simulation et visualisation matplotlib
-    result.png          : Resultat de simulation
-    README.md         : Ce fichier
+    base_tracker.py          : Interface abstraite commune (Pose2D, Twist2D)
+    robot_model.py           : Modele cinematique unicycle
+    trajectory.py            : Generateur de trajectoires de test
+    stanley_controller.py    : Controleur Stanley (interface Nav2-compatible)
+    simulate_stanley.py      : Simulation et visualisation matplotlib
+    README.md                : Ce fichier
 
+    indoor_navigation/indoor_navigation/
+    stanley_controller.py    : Copie pour import ROS 2
+    stanley_node.py          : Noeud ROS 2 pour suivi d acteur
 
-## Utilisation rapide
+## Lancer la simulation standalone (matplotlib)
 
-    from stanley import StanleyTracker
+    cd Robot_indoor/Robot_indoor
+    python3 -m path_tracker.simulate_stanley
 
-    tracker = StanleyTracker(k=0.75, v_base=0.15, v_max=0.5, wheel_base=0.3)
+Resultat attendu :
+    Arrivee ! Trajectoire complete en 1213 steps.
+    Image sauvegardee : result_stanley_nav2_seed45_*.png
 
-    robot_state = {'x': 0.0, 'y': 0.0, 'theta': 0.0, 'v': 0.0}
-    trajectory  = [(0.0, 0.0), (1.0, 0.5), (2.0, 1.0)]
+## Lancer le suivi d acteur dans Gazebo
 
-    v_gauche, v_droite = tracker.compute_velocities(robot_state, trajectory, 0)
+Terminal 1 - Gazebo :
+    ros2 launch robot_indoor view.launch.py
 
+Terminal 2 - Stanley node :
+    ros2 run indoor_navigation stanley_node.py
 
-## Lancer la simulation
+Terminal 3 - Teleoperation de l acteur :
+    ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args --remap cmd_vel:=/actor/cmd_vel
 
-    pip install matplotlib
-    python3 simulator.py
+Le robot suit automatiquement l acteur avec :
+- Distance de securite : 0.6 m (arret si trop proche)
+- Fil d Ariane : waypoints enregistres tous les 0.25 m
+- Frequence de controle : 20 Hz
 
-Le resultat est sauvegarde dans result.png.
+## Interface StanleyController (compatible PathController)
 
+    from path_tracker.stanley_controller import (
+        StanleyController, StanleyConfig,
+        Pose2D, TrajectoryPoint, ControlStatus
+    )
+
+    config     = StanleyConfig(k=0.75, wheel_base=0.297)
+    controller = StanleyController(config=config)
+
+    controller.set_plan([TrajectoryPoint(x=1.0, y=0.0)])
+
+    cmd = controller.compute_command(pose, dt=0.05)
+    # cmd.twist.linear  : vitesse lineaire (m/s)
+    # cmd.twist.angular : vitesse angulaire (rad/s)
+    # cmd.status        : RUNNING / GOAL_REACHED / STUCK / NO_PLAN
 
 ## Parametres Stanley
 
-    k          = 0.75       Gain correction laterale
-    v_base     = 0.15 m/s  Vitesse nominale
-    v_max      = 0.50 m/s  Vitesse maximale
-    wheel_base = 0.30 m    Distance entre les deux roues
+    k                  = 0.75      Gain correction laterale
+    wheel_base         = 0.297 m   Distance entre les roues (URDF)
+    max_linear_speed   = 0.8 m/s   Vitesse maximale
+    max_angular_speed  = 1.5 rad/s Vitesse angulaire maximale
+    goal_xy_tolerance  = 0.20 m    Tolerance d arrivee
+    safety_distance    = 0.6 m     Distance de securite acteur
 
+## Dimensions du robot (robot_core_04.xacro)
 
-## Modele du robot
-
-Le robot est represente a chaque instant par son etat :
-
-    robot_state = {
-        'x'     : position X en metres
-        'y'     : position Y en metres
-        'theta' : orientation en radians
-        'v'     : vitesse lineaire courante
-    }
-
-Les vitesses de roues sont calculees ainsi :
-
-    v_lineaire  = (v_droite + v_gauche) / 2
-    v_angulaire = (v_droite - v_gauche) / wheel_base
-
-
-## Trajectoires supportees
-
-    Ligne droite   : segment rectiligne de longueur aleatoire
-    Arc de cercle  : rayon et angle balaye choisis aleatoirement
-    Zig zag        : amplitude et nombre de dents parametrables
-    Chemin combine : enchainent plusieurs segments avec jonction lisse
-
-
-## Resultat
-
-Le robot (rouge) suit fidelement la trajectoire cible (bleu)
-sur des chemins combinant arcs de cercle, lignes droites et zig zag.
-
-Voir result.png.
+    wheel_radius   = 0.06 m
+    wheel_offset_y = 0.1485 m
+    wheel_base     = 2 * 0.1485 = 0.297 m
