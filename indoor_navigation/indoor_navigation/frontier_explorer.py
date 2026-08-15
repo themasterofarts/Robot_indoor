@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import math
+import os
 from typing import Optional, Tuple, List
 
+import numpy as np
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
@@ -54,6 +56,7 @@ class FrontierExplorer(Node):
         self._navigating: bool = False
         self._last_goal_xy: Optional[Tuple[float, float]] = None
         self._last_goal_time = self.get_clock().now()
+        self._map_saved = False
 
         # ---- ROS I/O
         self._sub = self.create_subscription(OccupancyGrid, self.map_topic, self._on_map, 10)
@@ -76,12 +79,21 @@ class FrontierExplorer(Node):
         self.declare_parameter("goal_backoff_m", 0.6)          # recul vers l'intérieur
         self.declare_parameter("goal_search_radius_m", 1.5)    # fallback autour du centroïde
         self.declare_parameter("goal_clearance_cells", 2)      # sécurité (en cellules)
+        self.declare_parameter("save_map_on_completion", False)
+
+        default_map_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "indoor_navigation", "map"))
+        default_map_path = os.path.join(default_map_dir, "explored_map.pgm")
+        self.declare_parameter("map_save_path", default_map_path)
+
         self.goal_backoff_m = float(self.get_parameter("goal_backoff_m").value)
         self.goal_search_radius_m = float(self.get_parameter("goal_search_radius_m").value)
         self.goal_clearance_cells = int(self.get_parameter("goal_clearance_cells").value)
+        self.save_map_on_completion = bool(self.get_parameter("save_map_on_completion").value)
+        self.map_save_path = self.get_parameter("map_save_path").value
 
     def _on_map(self, msg: OccupancyGrid):
         self._map = msg
+        self._map_saved = False
 
     def _get_robot_xy(self) -> Optional[Tuple[float, float]]:
         # Try base_frame then base_footprint as fallback
@@ -171,6 +183,35 @@ class FrontierExplorer(Node):
         except Exception as e:
             self.get_logger().warn(f"Failed reading Nav2 result: {e}")
         self._navigating = False
+
+    def _write_map_pgm(self, m: OccupancyGrid) -> bool:
+        try:
+            directory = os.path.dirname(self.map_save_path)
+            if directory and not os.path.exists(directory):
+                os.makedirs(directory, exist_ok=True)
+
+            width = int(m.info.width)
+            height = int(m.info.height)
+            header = f"P5\n{width} {height}\n255\n"
+            data = bytearray(width * height)
+
+            for idx, value in enumerate(m.data):
+                if value == -1:
+                    data[idx] = 205
+                elif value >= 65:
+                    data[idx] = 0
+                else:
+                    data[idx] = 254
+
+            with open(self.map_save_path, "wb") as out_file:
+                out_file.write(header.encode("ascii"))
+                out_file.write(data)
+
+            self.get_logger().info(f"Map saved to {self.map_save_path}")
+            return True
+        except Exception as exc:
+            self.get_logger().warn(f"Failed to save map PGM: {exc}")
+            return False
 
     def _publish_markers(self, m: OccupancyGrid, frontiers: List[Frontier], chosen: Optional[Frontier]):
         ma = MarkerArray()
@@ -332,6 +373,10 @@ class FrontierExplorer(Node):
         frontiers = extract_frontiers(
             grid, origin_xy=(ox, oy), resolution=res, min_cluster_size=self.min_cluster_size
         )
+
+        if not frontiers and self.save_map_on_completion and not self._map_saved and not self._navigating:
+            if self._write_map_pgm(m):
+                self._map_saved = True
 
         robot_xy = self._get_robot_xy()
         chosen = None
