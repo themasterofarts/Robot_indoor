@@ -1,0 +1,13 @@
+# ROS2 build artifacts
+build/
+install/
+log/
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Local recordings
+recordings/
