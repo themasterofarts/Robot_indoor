@@ -3,4 +3,4 @@
 	url = git@github.com:themasterofarts/gazebo-ros-actor-plugin.git
 [submodule "Ros2-LLM-Robot-Agent"]
 	path = Ros2-LLM-Robot-Agent
-	url = git@github.com:thoukam/Ros2-LLM-Robot-Agent.git
+	url = https://github.com/thoukam/Ros2-LLM-Robot-Agent.git
